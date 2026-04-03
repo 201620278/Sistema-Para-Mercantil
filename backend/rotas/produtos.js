@@ -3,15 +3,30 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 
-// Listar todos os produtos
+// Listar todos os produtos ou buscar por nome/código de barras
 router.get('/', (req, res) => {
-  db.all('SELECT * FROM produtos ORDER BY nome', (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    res.json(rows);
-  });
+  const busca = req.query.busca;
+  if (busca) {
+    db.all(
+      'SELECT * FROM produtos WHERE nome LIKE ? OR codigo LIKE ? ORDER BY nome',
+      [`%${busca}%`, `%${busca}%`],
+      (err, rows) => {
+        if (err) {
+          res.status(500).json({ error: err.message });
+          return;
+        }
+        res.json(rows);
+      }
+    );
+  } else {
+    db.all('SELECT * FROM produtos ORDER BY nome', (err, rows) => {
+      if (err) {
+        res.status(500).json({ error: err.message });
+        return;
+      }
+      res.json(rows);
+    });
+  }
 });
 
 // Buscar produto por ID

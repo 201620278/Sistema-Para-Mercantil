@@ -22,6 +22,7 @@ function renderClientes(clientes) {
                         <i class="fas fa-users"></i> Lista de Clientes
                     </div>
                     <div class="col-md-6 text-end">
+                        <input type="text" class="form-control form-control-sm d-inline-block w-auto me-2" id="buscaCliente" placeholder="Buscar cliente...">
                         <button class="btn btn-primary btn-sm" onclick="showClienteModal()">
                             <i class="fas fa-plus"></i> Novo Cliente
                         </button>
@@ -42,14 +43,13 @@ function renderClientes(clientes) {
                                 <th>Ações</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="clientes-tbody">
                             ${clientes.map(c => `
                                 <tr>
                                     <td>${c.nome}</td>
                                     <td>${c.cpf_cnpj || '-'}</td>
                                     <td>${c.telefone || '-'}</td>
                                     <td>${c.email || '-'}</td>
-                                    <td>${c.cep || '-'}</td>
                                     <td>${formatCurrency(c.limite_credito)}</td>
                                     <td class="${c.credito_atual > 0 ? 'text-danger' : 'text-success'}">
                                         ${formatCurrency(c.credito_atual)}
@@ -77,6 +77,41 @@ function renderClientes(clientes) {
             </div>
         </div>
     `;
+    $('#page-content').html(html);
+    $('#buscaCliente').on('input', function() {
+        const termo = $(this).val().toLowerCase();
+        const filtrados = clientes.filter(c =>
+            (c.nome && c.nome.toLowerCase().includes(termo)) ||
+            (c.cpf_cnpj && String(c.cpf_cnpj).toLowerCase().includes(termo))
+        );
+        $('#clientes-tbody').html(filtrados.map(c => `
+            <tr>
+                <td>${c.nome}</td>
+                <td>${c.cpf_cnpj || '-'}</td>
+                <td>${c.telefone || '-'}</td>
+                <td>${c.email || '-'}</td>
+                <td>${formatCurrency(c.limite_credito)}</td>
+                <td class="${c.credito_atual > 0 ? 'text-danger' : 'text-success'}">
+                    ${formatCurrency(c.credito_atual)}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="viewCliente(${c.id})" title="Detalhes">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="historicoComprasCliente(${c.id})" title="Histórico de compras">
+                        <i class="fas fa-receipt"></i>
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="editCliente(${c.id})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteCliente(${c.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join(''));
+    });
+    return;
     
     $('#page-content').html(html);
 }

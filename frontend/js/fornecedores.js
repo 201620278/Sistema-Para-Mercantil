@@ -3,83 +3,13 @@ let fornecedoresCache = [];
 function loadFornecedores() {
   $('#page-content').html(`
     <div class="fornecedores-page">
-      <div class="page-header">
-        <h2>Cadastro de Fornecedores</h2>
-        <p>Cadastre, edite e exclua fornecedores do sistema.</p>
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>Fornecedores</h2>
+        <button class="btn btn-success" id="btnNovoFornecedor"><i class="fas fa-plus"></i> Novo Fornecedor</button>
       </div>
-
       <div class="card">
         <div class="card-body">
-          <h3 id="tituloFormularioFornecedor">Novo Fornecedor</h3>
-
-          <input type="hidden" id="fornecedorId">
-
-          <div class="form-grid">
-            <div class="form-group">
-              <label>Nome *</label>
-              <input type="text" id="nomeFornecedor" class="form-control" placeholder="Nome do fornecedor">
-            </div>
-            <div class="form-group">
-              <label>Razão Social</label>
-              <input type="text" id="razaoSocialFornecedor" class="form-control" placeholder="Razão social">
-            </div>
-            <div class="form-group">
-              <label>CPF/CNPJ</label>
-              <input type="text" id="cpfCnpjFornecedor" class="form-control" placeholder="CPF ou CNPJ">
-            </div>
-            <div class="form-group">
-              <label>Telefone</label>
-              <input type="text" id="telefoneFornecedor" class="form-control" placeholder="Telefone">
-            </div>
-            <div class="form-group">
-              <label>E-mail</label>
-              <input type="email" id="emailFornecedor" class="form-control" placeholder="E-mail">
-            </div>
-            <div class="form-group">
-              <label>Contato</label>
-              <input type="text" id="contatoFornecedor" class="form-control" placeholder="Pessoa de contato">
-            </div>
-            <div class="form-group">
-              <label>CEP</label>
-              <input type="text" id="cepFornecedor" class="form-control" placeholder="CEP">
-            </div>
-            <div class="form-group">
-              <label>Rua</label>
-              <input type="text" id="ruaFornecedor" class="form-control" placeholder="Rua">
-            </div>
-            <div class="form-group">
-              <label>Número</label>
-              <input type="text" id="numeroFornecedor" class="form-control" placeholder="Número">
-            </div>
-            <div class="form-group">
-              <label>Bairro</label>
-              <input type="text" id="bairroFornecedor" class="form-control" placeholder="Bairro">
-            </div>
-            <div class="form-group">
-              <label>Cidade</label>
-              <input type="text" id="cidadeFornecedor" class="form-control" placeholder="Cidade">
-            </div>
-            <div class="form-group">
-              <label>UF</label>
-              <input type="text" id="ufFornecedor" class="form-control" maxlength="2" placeholder="UF">
-            </div>
-            <div class="form-group form-group-full">
-              <label>Observações</label>
-              <textarea id="observacoesFornecedor" class="form-control" rows="3" placeholder="Observações"></textarea>
-            </div>
-          </div>
-
-          <div class="acoes-formulario">
-            <button class="btn btn-primary" onclick="saveFornecedor()">Salvar</button>
-            <button class="btn btn-secondary" onclick="limparFormularioFornecedor()">Cancelar</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="card mt-3">
-        <div class="card-body">
-          <div class="fornecedores-topo-lista">
-            <h3>Fornecedores cadastrados</h3>
+          <div class="fornecedores-topo-lista mb-2">
             <input
               type="text"
               id="buscaFornecedor"
@@ -88,7 +18,6 @@ function loadFornecedores() {
               oninput="filtrarFornecedores()"
             >
           </div>
-
           <div class="table-responsive">
             <table class="table tabela-fornecedores">
               <thead>
@@ -111,10 +40,86 @@ function loadFornecedores() {
           </div>
         </div>
       </div>
+      <div id="formularioFornecedorContainer"></div>
     </div>
   `);
 
-  // Adiciona evento para buscar endereço pelo CEP
+  $('#btnNovoFornecedor').off('click').on('click', function() {
+    exibirFormularioFornecedor();
+  });
+
+  carregarListaFornecedores();
+// Exibe o formulário de fornecedor no container
+function exibirFormularioFornecedor(fornecedor = null) {
+  const isEdicao = !!fornecedor;
+  const titulo = isEdicao ? 'Editar Fornecedor' : 'Novo Fornecedor';
+  const f = fornecedor || {};
+  $('#formularioFornecedorContainer').html(`
+    <div class="card mt-3">
+      <div class="card-body">
+        <h3 id="tituloFormularioFornecedor">${titulo}</h3>
+        <input type="hidden" id="fornecedorId" value="${f.id || ''}">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nome *</label>
+            <input type="text" id="nomeFornecedor" class="form-control" placeholder="Nome do fornecedor" value="${f.nome || ''}">
+          </div>
+          <div class="form-group">
+            <label>Razão Social</label>
+            <input type="text" id="razaoSocialFornecedor" class="form-control" placeholder="Razão social" value="${f.razao_social || ''}">
+          </div>
+          <div class="form-group">
+            <label>CPF/CNPJ</label>
+            <input type="text" id="cpfCnpjFornecedor" class="form-control" placeholder="CPF ou CNPJ" value="${f.cpf_cnpj || ''}">
+          </div>
+          <div class="form-group">
+            <label>Telefone</label>
+            <input type="text" id="telefoneFornecedor" class="form-control" placeholder="Telefone" value="${f.telefone || ''}">
+          </div>
+          <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" id="emailFornecedor" class="form-control" placeholder="E-mail" value="${f.email || ''}">
+          </div>
+          <div class="form-group">
+            <label>Contato</label>
+            <input type="text" id="contatoFornecedor" class="form-control" placeholder="Pessoa de contato" value="${f.contato || ''}">
+          </div>
+          <div class="form-group">
+            <label>CEP</label>
+            <input type="text" id="cepFornecedor" class="form-control" placeholder="CEP" value="${f.cep || ''}">
+          </div>
+          <div class="form-group">
+            <label>Rua</label>
+            <input type="text" id="ruaFornecedor" class="form-control" placeholder="Rua" value="${f.rua || ''}">
+          </div>
+          <div class="form-group">
+            <label>Número</label>
+            <input type="text" id="numeroFornecedor" class="form-control" placeholder="Número" value="${f.numero || ''}">
+          </div>
+          <div class="form-group">
+            <label>Bairro</label>
+            <input type="text" id="bairroFornecedor" class="form-control" placeholder="Bairro" value="${f.bairro || ''}">
+          </div>
+          <div class="form-group">
+            <label>Cidade</label>
+            <input type="text" id="cidadeFornecedor" class="form-control" placeholder="Cidade" value="${f.cidade || ''}">
+          </div>
+          <div class="form-group">
+            <label>UF</label>
+            <input type="text" id="ufFornecedor" class="form-control" maxlength="2" placeholder="UF" value="${f.uf || ''}">
+          </div>
+          <div class="form-group form-group-full">
+            <label>Observações</label>
+            <textarea id="observacoesFornecedor" class="form-control" rows="3" placeholder="Observações">${f.observacoes || ''}</textarea>
+          </div>
+        </div>
+        <div class="acoes-formulario">
+          <button class="btn btn-primary" onclick="saveFornecedor()">Salvar</button>
+          <button class="btn btn-secondary" onclick="fecharFormularioFornecedor()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  `);
   setTimeout(() => {
     $('#cepFornecedor').off('blur').on('blur', function() {
       const cep = $(this).val().replace(/\D/g, '');
@@ -123,8 +128,12 @@ function loadFornecedores() {
       }
     });
   }, 300);
+}
 
-  carregarListaFornecedores();
+function fecharFormularioFornecedor() {
+  $('#formularioFornecedorContainer').html('');
+  limparFormularioFornecedor();
+}
 // Busca endereço pelo CEP usando a API ViaCEP
 function buscarEnderecoPorCEP(cep) {
   if (!cep) return;
@@ -269,35 +278,12 @@ async function editFornecedor(id) {
         'Authorization': 'Bearer ' + localStorage.getItem('token')
       }
     });
-
     const fornecedor = await response.json();
-
     if (!response.ok) {
       showNotification(fornecedor.error || 'Erro ao buscar fornecedor.', 'danger');
       return;
     }
-
-    $('#fornecedorId').val(fornecedor.id || '');
-    $('#nomeFornecedor').val(fornecedor.nome || '');
-    $('#razaoSocialFornecedor').val(fornecedor.razao_social || '');
-    $('#cpfCnpjFornecedor').val(fornecedor.cpf_cnpj || '');
-    $('#telefoneFornecedor').val(fornecedor.telefone || '');
-    $('#emailFornecedor').val(fornecedor.email || '');
-    $('#contatoFornecedor').val(fornecedor.contato || '');
-    $('#cepFornecedor').val(fornecedor.cep || '');
-    $('#ruaFornecedor').val(fornecedor.rua || '');
-    $('#numeroFornecedor').val(fornecedor.numero || '');
-    $('#bairroFornecedor').val(fornecedor.bairro || '');
-    $('#cidadeFornecedor').val(fornecedor.cidade || '');
-    $('#ufFornecedor').val(fornecedor.uf || '');
-    $('#observacoesFornecedor').val(fornecedor.observacoes || '');
-
-    $('#tituloFormularioFornecedor').text('Editar Fornecedor');
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    exibirFormularioFornecedor(fornecedor);
   } catch (error) {
     console.error('Erro ao editar fornecedor:', error);
     showNotification('Erro ao carregar dados do fornecedor.', 'danger');
@@ -336,21 +322,8 @@ async function deleteFornecedor(id) {
 }
 
 function limparFormularioFornecedor() {
-  $('#fornecedorId').val('');
-  $('#nomeFornecedor').val('');
-  $('#razaoSocialFornecedor').val('');
-  $('#cpfCnpjFornecedor').val('');
-  $('#telefoneFornecedor').val('');
-  $('#emailFornecedor').val('');
-  $('#contatoFornecedor').val('');
-  $('#cepFornecedor').val('');
-  $('#ruaFornecedor').val('');
-  $('#numeroFornecedor').val('');
-  $('#bairroFornecedor').val('');
-  $('#cidadeFornecedor').val('');
-  $('#ufFornecedor').val('');
-  $('#observacoesFornecedor').val('');
-
+  // Limpa campos do formulário se existir
+  $('#formularioFornecedorContainer input, #formularioFornecedorContainer textarea').val('');
   $('#tituloFormularioFornecedor').text('Novo Fornecedor');
 }
 

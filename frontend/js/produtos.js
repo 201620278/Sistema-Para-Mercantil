@@ -11,6 +11,8 @@ function loadProdutos() {
         }
     });
 }
+window.loadProdutos = loadProdutos;
+
 
 // Render produtos
 function renderProdutos(produtos) {
@@ -22,6 +24,7 @@ function renderProdutos(produtos) {
                         <i class="fas fa-box"></i> Lista de Produtos
                     </div>
                     <div class="col-md-6 text-end">
+                        <input type="text" class="form-control form-control-sm d-inline-block w-auto me-2" id="buscaProduto" placeholder="Buscar produto...">
                         <button class="btn btn-primary btn-sm" onclick="showProdutoModal()">
                             <i class="fas fa-plus"></i> Novo Produto
                         </button>
@@ -33,41 +36,30 @@ function renderProdutos(produtos) {
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
+                                <th>Nome</th>
                                 <th>Código</th>
-                                <th>Produto</th>
                                 <th>Categoria</th>
                                 <th>Unidade</th>
+                                <th>Preço Compra</th>
                                 <th>Preço Venda</th>
                                 <th>Estoque</th>
-                                <th>Mínimo</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="produtos-tbody">
                             ${produtos.map(p => `
                                 <tr>
-                                    <td>${p.codigo || '-'}</td>
                                     <td>${p.nome}</td>
+                                    <td>${p.codigo || '-'}</td>
                                     <td>${p.categoria || '-'}</td>
-                                    <td>${p.unidade || 'un'}</td>
+                                    <td>${p.unidade || '-'}</td>
+                                    <td>${formatCurrency(p.preco_compra)}</td>
                                     <td>${formatCurrency(p.preco_venda)}</td>
-                                    <td class="${p.estoque_atual <= p.estoque_minimo ? 'text-danger fw-bold' : ''}">
-                                        ${p.estoque_atual} ${p.unidade || 'un'}
-                                    </td>
-                                    <td>${p.estoque_minimo} ${p.unidade || 'un'}</td>
+                                    <td>${p.estoque_atual}</td>
                                     <td>
-                                        <button class="btn btn-sm btn-info" onclick="viewProduto(${p.id})" title="Detalhes">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-secondary" onclick="showHistoricoPrecos(${p.id})" title="Histórico de preços">
-                                            <i class="fas fa-history"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-warning" onclick="editProduto(${p.id})" title="Editar">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-danger" onclick="deleteProduto(${p.id})" title="Excluir">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        <button class="btn btn-sm btn-info" onclick="viewProduto(${p.id})" title="Detalhes"><i class="fas fa-eye"></i></button>
+                                        <button class="btn btn-sm btn-warning" onclick="editProduto(${p.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteProduto(${p.id})"><i class="fas fa-trash"></i></button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -78,8 +70,30 @@ function renderProdutos(produtos) {
             </div>
         </div>
     `;
-    
     $('#page-content').html(html);
+    $('#buscaProduto').on('input', function() {
+        const termo = $(this).val().toLowerCase();
+        const filtrados = produtos.filter(p =>
+            (p.nome && p.nome.toLowerCase().includes(termo)) ||
+            (p.codigo && String(p.codigo).toLowerCase().includes(termo))
+        );
+        $('#produtos-tbody').html(filtrados.map(p => `
+            <tr>
+                <td>${p.nome}</td>
+                <td>${p.codigo || '-'}</td>
+                <td>${p.categoria || '-'}</td>
+                <td>${p.unidade || '-'}</td>
+                <td>${formatCurrency(p.preco_compra)}</td>
+                <td>${formatCurrency(p.preco_venda)}</td>
+                <td>${p.estoque_atual}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="viewProduto(${p.id})" title="Detalhes"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-sm btn-warning" onclick="editProduto(${p.id})" title="Editar"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteProduto(${p.id})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>
+        `).join(''));
+    });
 }
 
 // Show produto modal
@@ -214,57 +228,6 @@ function saveProduto() {
         },
         error: function(xhr) {
             showNotification('Erro ao salvar produto: ' + xhr.responseJSON?.error || 'Erro desconhecido', 'danger');
-        }
-    });
-}
-
-// Edit produto
-function editProduto(id) {
-    $.ajax({
-        url: `${API_URL}/produtos/${id}`,
-        method: 'GET',
-        success: function(produto) {
-            showProdutoModal(produto);
-        }
-    });
-}
-
-// View produto
-function viewProduto(id) {
-    $.ajax({
-        url: `${API_URL}/produtos/${id}`,
-        method: 'GET',
-        success: function(produto) {
-            const modalHtml = `
-                <div class="modal fade" id="viewProdutoModal" tabindex="-1">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">Detalhes do Produto</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p><strong>Código:</strong> ${produto.codigo || '-'}</p>
-                                <p><strong>Nome:</strong> ${produto.nome}</p>
-                                <p><strong>Categoria:</strong> ${produto.categoria || '-'}</p>
-                                <p><strong>Unidade:</strong> ${produto.unidade || 'un'}</p>
-                                <p><strong>Preço Compra:</strong> ${formatCurrency(produto.preco_compra || 0)}</p>
-                                <p><strong>Preço Venda:</strong> ${formatCurrency(produto.preco_venda)}</p>
-                                <p><strong>Estoque Atual:</strong> ${produto.estoque_atual} ${produto.unidade || 'un'}</p>
-                                <p><strong>Estoque Mínimo:</strong> ${produto.estoque_minimo} ${produto.unidade || 'un'}</p>
-                                <p><strong>Fornecedor:</strong> ${produto.fornecedor || '-'}</p>
-                                <p><strong>Cadastrado em:</strong> ${formatDateTime(produto.created_at)}</p>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            $('#modal-container').html(modalHtml);
-            $('#viewProdutoModal').modal('show');
         }
     });
 }
