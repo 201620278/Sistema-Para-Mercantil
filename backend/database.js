@@ -14,6 +14,35 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 function inicializarBanco() {
+              // Tabela de subcategorias
+              db.run(`
+                CREATE TABLE IF NOT EXISTS subcategorias (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  nome TEXT NOT NULL,
+                  categoria_id INTEGER NOT NULL,
+                  ativo INTEGER DEFAULT 1,
+                  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                  FOREIGN KEY (categoria_id) REFERENCES categorias(id)
+                )
+              `, (err) => {
+                if (err) console.error('Erro ao criar tabela subcategorias:', err);
+                else console.log('Tabela subcategorias criada/verificada');
+              });
+          // Tabela de categorias
+          db.run(`
+            CREATE TABLE IF NOT EXISTS categorias (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              nome TEXT NOT NULL UNIQUE,
+              descricao TEXT,
+              ativo INTEGER DEFAULT 1,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+          `, (err) => {
+            if (err) console.error('Erro ao criar tabela categorias:', err);
+            else console.log('Tabela categorias criada/verificada');
+          });
       // Tabela de fornecedores
       db.run(`
         CREATE TABLE IF NOT EXISTS fornecedores (
@@ -45,7 +74,8 @@ function inicializarBanco() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         codigo VARCHAR(50) UNIQUE,
         nome VARCHAR(200) NOT NULL,
-        categoria VARCHAR(100),
+        categoria_id INTEGER,
+        subcategoria_id INTEGER,
         unidade VARCHAR(20),
         preco_compra DECIMAL(10,2),
         preco_venda DECIMAL(10,2) NOT NULL,
@@ -53,7 +83,9 @@ function inicializarBanco() {
         estoque_minimo DECIMAL(10,2) DEFAULT 0,
         fornecedor VARCHAR(200),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (categoria_id) REFERENCES categorias(id),
+        FOREIGN KEY (subcategoria_id) REFERENCES subcategorias(id)
       )
     `, (err) => {
       if (err) console.error('Erro ao criar tabela produtos:', err);

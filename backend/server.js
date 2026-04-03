@@ -54,6 +54,8 @@ app.get('/login', (req, res) => {
 const produtosRoutes = require('./rotas/produtos');
 const clientesRoutes = require('./rotas/clientes');
 const comprasRoutes = require('./rotas/compras');
+const categoriasRoutes = require('./rotas/categorias');
+const subcategoriasRoutes = require('./rotas/subcategorias');
 
 const vendasRoutes = require('./rotas/vendas');
 const financeiroRoutes = require('./rotas/financeiro');
@@ -64,6 +66,8 @@ const contasReceberRoutes = require('./rotas/contas_receber');
 app.use('/api/produtos', verificarToken, produtosRoutes);
 app.use('/api/clientes', verificarToken, clientesRoutes);
 app.use('/api/compras', verificarToken, comprasRoutes);
+app.use('/api/categorias', verificarToken, categoriasRoutes);
+app.use('/api/subcategorias', verificarToken, subcategoriasRoutes);
 app.use('/api/vendas', verificarToken, vendasRoutes);
 app.use('/api/contas-receber', verificarToken, contasReceberRoutes);
 app.use('/api/financeiro', verificarToken, financeiroRoutes);

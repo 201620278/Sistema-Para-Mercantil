@@ -1,12 +1,16 @@
-// Load produtos page
+// =========================
+// MÓDULO DE PRODUTOS
+// =========================
+
+// Carrega página de produtos
 function loadProdutos() {
     $.ajax({
         url: `${API_URL}/produtos`,
         method: 'GET',
-        success: function(produtos) {
-            renderProdutos(produtos);
+        success: function (produtos) {
+            renderProdutos(produtos || []);
         },
-        error: function() {
+        error: function () {
             $('#page-content').html('<div class="alert alert-danger">Erro ao carregar produtos!</div>');
         }
     });
@@ -14,23 +18,29 @@ function loadProdutos() {
 window.loadProdutos = loadProdutos;
 
 
-// Render produtos
+// Renderiza listagem de produtos
 function renderProdutos(produtos) {
     const html = `
         <div class="card">
             <div class="card-header">
-                <div class="row">
+                <div class="row align-items-center">
                     <div class="col-md-6">
                         <i class="fas fa-box"></i> Lista de Produtos
                     </div>
                     <div class="col-md-6 text-end">
-                        <input type="text" class="form-control form-control-sm d-inline-block w-auto me-2" id="buscaProduto" placeholder="Buscar produto...">
+                        <input
+                            type="text"
+                            class="form-control form-control-sm d-inline-block w-auto me-2"
+                            id="buscaProduto"
+                            placeholder="Buscar produto..."
+                        >
                         <button class="btn btn-primary btn-sm" onclick="showProdutoModal()">
                             <i class="fas fa-plus"></i> Novo Produto
                         </button>
                     </div>
                 </div>
             </div>
+
             <div class="card-body">
                 <div class="table-responsive">
                     <table class="table table-striped table-hover">
@@ -47,85 +57,118 @@ function renderProdutos(produtos) {
                             </tr>
                         </thead>
                         <tbody id="produtos-tbody">
-                            ${produtos.map(p => `
-                                <tr>
-                                    <td>${p.nome}</td>
-                                    <td>${p.codigo || '-'}</td>
-                                    <td>${p.categoria || '-'}</td>
-                                    <td>${p.unidade || '-'}</td>
-                                    <td>${formatCurrency(p.preco_compra)}</td>
-                                    <td>${formatCurrency(p.preco_venda)}</td>
-                                    <td>${p.estoque_atual}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info" onclick="viewProduto(${p.id})" title="Detalhes"><i class="fas fa-eye"></i></button>
-                                        <button class="btn btn-sm btn-warning" onclick="editProduto(${p.id})" title="Editar"><i class="fas fa-edit"></i></button>
-                                        <button class="btn btn-sm btn-danger" onclick="deleteProduto(${p.id})"><i class="fas fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                            ${produtos.length === 0 ? '<tr><td colspan="8" class="text-center">Nenhum produto cadastrado</td></tr>' : ''}
+                            ${renderProdutosRows(produtos)}
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
     `;
+
     $('#page-content').html(html);
-    $('#buscaProduto').on('input', function() {
-        const termo = $(this).val().toLowerCase();
+
+    $('#buscaProduto').on('input', function () {
+        const termo = ($(this).val() || '').toLowerCase().trim();
+
         const filtrados = produtos.filter(p =>
-            (p.nome && p.nome.toLowerCase().includes(termo)) ||
-            (p.codigo && String(p.codigo).toLowerCase().includes(termo))
+            (p.nome && String(p.nome).toLowerCase().includes(termo)) ||
+            (p.codigo && String(p.codigo).toLowerCase().includes(termo)) ||
+            (p.categoria && String(p.categoria).toLowerCase().includes(termo)) ||
+            (p.fornecedor && String(p.fornecedor).toLowerCase().includes(termo))
         );
-        $('#produtos-tbody').html(filtrados.map(p => `
-            <tr>
-                <td>${p.nome}</td>
-                <td>${p.codigo || '-'}</td>
-                <td>${p.categoria || '-'}</td>
-                <td>${p.unidade || '-'}</td>
-                <td>${formatCurrency(p.preco_compra)}</td>
-                <td>${formatCurrency(p.preco_venda)}</td>
-                <td>${p.estoque_atual}</td>
-                <td>
-                    <button class="btn btn-sm btn-info" onclick="viewProduto(${p.id})" title="Detalhes"><i class="fas fa-eye"></i></button>
-                    <button class="btn btn-sm btn-warning" onclick="editProduto(${p.id})" title="Editar"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteProduto(${p.id})"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>
-        `).join(''));
+
+        $('#produtos-tbody').html(renderProdutosRows(filtrados));
     });
 }
 
-// Show produto modal
+function renderProdutosRows(produtos) {
+    if (!produtos || produtos.length === 0) {
+        return '<tr><td colspan="8" class="text-center">Nenhum produto cadastrado</td></tr>';
+    }
+
+    return produtos.map(p => `
+        <tr>
+            <td>${escapeHtml(p.nome || '')}</td>
+            <td>${escapeHtml(p.codigo || '-')}</td>
+            <td>${escapeHtml(p.categoria || '-')}</td>
+            <td>${escapeHtml(p.unidade || '-')}</td>
+            <td>${formatCurrency(Number(p.preco_compra || 0))}</td>
+            <td>${formatCurrency(Number(p.preco_venda || 0))}</td>
+            <td>${Number(p.estoque_atual || 0)}</td>
+            <td>
+                <button class="btn btn-sm btn-info" onclick="viewProduto(${p.id})" title="Detalhes">
+                    <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-sm btn-warning" onclick="editProduto(${p.id})" title="Editar">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-danger" onclick="deleteProduto(${p.id})" title="Excluir">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="btn btn-sm btn-secondary" onclick="showHistoricoPrecos(${p.id})" title="Histórico de preços">
+                    <i class="fas fa-history"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+
+// Abre modal de produto
 function showProdutoModal(produto = null) {
     const isEdit = produto !== null;
     const title = isEdit ? 'Editar Produto' : 'Novo Produto';
-    
     const lucro = isEdit && produto.lucro_percentual !== undefined ? produto.lucro_percentual : '';
+
     const modalHtml = `
-        <div class="modal fade" id="produtoModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
+        <div class="modal fade" id="produtoModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">${title}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
                     </div>
+
                     <div class="modal-body">
                         <form id="produtoForm">
-                            <input type="hidden" id="produtoId" value="${isEdit ? produto.id : ''}">
+                            <input type="hidden" id="produtoId" value="${isEdit ? (produto.id || '') : ''}">
+
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label for="codigo" class="form-label">Código</label>
-                                    <input type="text" class="form-control" id="codigo" value="${isEdit ? (produto.codigo || '') : ''}">
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="codigo"
+                                        value="${isEdit ? escapeHtml(produto.codigo || '') : ''}"
+                                    >
                                 </div>
+
                                 <div class="col-md-6 mb-3">
                                     <label for="nome" class="form-label">Nome *</label>
-                                    <input type="text" class="form-control" id="nome" required value="${isEdit ? produto.nome : ''}">
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="nome"
+                                        required
+                                        value="${isEdit ? escapeHtml(produto.nome || '') : ''}"
+                                    >
                                 </div>
+
                                 <div class="col-md-6 mb-3">
-                                    <label for="categoria" class="form-label">Categoria</label>
-                                    <input type="text" class="form-control" id="categoria" value="${isEdit ? (produto.categoria || '') : ''}">
+                                    <label for="categoria_id" class="form-label">Categoria</label>
+                                    <select class="form-control" id="categoria_id">
+                                        <option value="">Carregando...</option>
+                                    </select>
                                 </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label for="subcategoria_id" class="form-label">Subcategoria</label>
+                                    <select class="form-control" id="subcategoria_id">
+                                        <option value="">Selecione uma categoria</option>
+                                    </select>
+                                </div>
+
                                 <div class="col-md-6 mb-3">
                                     <label for="unidade" class="form-label">Unidade</label>
                                     <select class="form-control" id="unidade">
@@ -136,33 +179,83 @@ function showProdutoModal(produto = null) {
                                         <option value="ml" ${isEdit && produto.unidade === 'ml' ? 'selected' : ''}>Mililitro</option>
                                     </select>
                                 </div>
+
                                 <div class="col-md-4 mb-3">
                                     <label for="preco_compra" class="form-label">Preço de Compra</label>
-                                    <input type="number" step="0.01" class="form-control" id="preco_compra" value="${isEdit ? (produto.preco_compra || 0) : 0}">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        class="form-control"
+                                        id="preco_compra"
+                                        value="${isEdit ? Number(produto.preco_compra || 0) : 0}"
+                                    >
                                 </div>
+
                                 <div class="col-md-4 mb-3">
                                     <label for="lucro_percentual" class="form-label">% Lucro Real</label>
-                                    <input type="number" step="0.01" class="form-control" id="lucro_percentual" placeholder="%" value="${lucro}">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        class="form-control"
+                                        id="lucro_percentual"
+                                        placeholder="%"
+                                        value="${lucro}"
+                                    >
                                 </div>
+
                                 <div class="col-md-4 mb-3">
                                     <label for="preco_venda" class="form-label">Preço de Venda *</label>
-                                    <input type="number" step="0.01" class="form-control" id="preco_venda" required value="${isEdit ? produto.preco_venda : 0}">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        class="form-control"
+                                        id="preco_venda"
+                                        required
+                                        value="${isEdit ? Number(produto.preco_venda || 0) : 0}"
+                                    >
                                 </div>
+
                                 <div class="col-md-6 mb-3">
                                     <label for="estoque_atual" class="form-label">Estoque Atual</label>
-                                    <input type="number" step="0.01" class="form-control" id="estoque_atual" value="${isEdit ? produto.estoque_atual : 0}">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        class="form-control"
+                                        id="estoque_atual"
+                                        value="${isEdit ? Number(produto.estoque_atual || 0) : 0}"
+                                    >
                                 </div>
+
                                 <div class="col-md-6 mb-3">
                                     <label for="estoque_minimo" class="form-label">Estoque Mínimo</label>
-                                    <input type="number" step="0.01" class="form-control" id="estoque_minimo" value="${isEdit ? (produto.estoque_minimo || 0) : 0}">
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        class="form-control"
+                                        id="estoque_minimo"
+                                        value="${isEdit ? Number(produto.estoque_minimo || 0) : 0}"
+                                    >
                                 </div>
-                                <div class="col-md-12 mb-3">
+
+                                <div class="col-md-12 mb-3 position-relative">
                                     <label for="fornecedor" class="form-label">Fornecedor</label>
-                                    <input type="text" class="form-control" id="fornecedor" value="${isEdit ? (produto.fornecedor || '') : ''}">
+                                    <input
+                                        type="text"
+                                        class="form-control"
+                                        id="fornecedor"
+                                        autocomplete="off"
+                                        value="${isEdit ? escapeHtml(produto.fornecedor || '') : ''}"
+                                    >
+                                    <div
+                                        id="fornecedor-autocomplete"
+                                        class="list-group position-absolute w-100"
+                                        style="z-index: 9999; display: none;"
+                                    ></div>
                                 </div>
                             </div>
                         </form>
                     </div>
+
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="button" class="btn btn-primary" onclick="saveProduto()">Salvar</button>
@@ -171,75 +264,227 @@ function showProdutoModal(produto = null) {
             </div>
         </div>
     `;
-    
+
     $('#modal-container').html(modalHtml);
 
-    // Sempre que preço de compra mudar, recalcula preço de venda com base na margem já definida
+    inicializarCategoriasESubcategorias(produto, isEdit);
+    inicializarAutocompleteFornecedor();
+    inicializarCalculoPreco(produto, isEdit);
+
+    $('#produtoModal').modal('show');
+}
+
+
+// Inicializa categorias e subcategorias
+function inicializarCategoriasESubcategorias(produto, isEdit) {
+    if (!(window.categoriasAPI && window.subcategoriasAPI)) {
+        $('#categoria_id').html('<option value="">Categorias indisponíveis</option>');
+        $('#subcategoria_id').html('<option value="">Subcategorias indisponíveis</option>');
+        return;
+    }
+
+    categoriasAPI.listar().done(function (categorias) {
+        let catOptions = '<option value="">Selecione</option>';
+
+        (categorias || []).forEach(cat => {
+            catOptions += `<option value="${cat.id}">${escapeHtml(cat.nome || '')}</option>`;
+        });
+
+        $('#categoria_id').html(catOptions);
+
+        if (isEdit && produto && produto.categoria_id) {
+            $('#categoria_id').val(String(produto.categoria_id));
+        }
+
+        function carregarSubs(catId, selectedSubId = '') {
+            if (!catId) {
+                $('#subcategoria_id').html('<option value="">Selecione uma categoria</option>');
+                return;
+            }
+
+            subcategoriasAPI.listarPorCategoria(catId).done(function (subcats) {
+                let subOptions = '<option value="">Nenhuma</option>';
+
+                (subcats || []).forEach(sub => {
+                    subOptions += `<option value="${sub.id}">${escapeHtml(sub.nome || '')}</option>`;
+                });
+
+                $('#subcategoria_id').html(subOptions);
+
+                if (selectedSubId) {
+                    $('#subcategoria_id').val(String(selectedSubId));
+                }
+            }).fail(function () {
+                $('#subcategoria_id').html('<option value="">Erro ao carregar subcategorias</option>');
+            });
+        }
+
+        $('#categoria_id').off('change').on('change', function () {
+            carregarSubs($(this).val());
+        });
+
+        if (isEdit && produto && produto.categoria_id) {
+            carregarSubs(produto.categoria_id, produto.subcategoria_id || '');
+        } else {
+            $('#subcategoria_id').html('<option value="">Selecione uma categoria</option>');
+        }
+    }).fail(function () {
+        $('#categoria_id').html('<option value="">Erro ao carregar categorias</option>');
+        $('#subcategoria_id').html('<option value="">Erro ao carregar subcategorias</option>');
+    });
+}
+
+
+// Inicializa autocomplete de fornecedor
+function inicializarAutocompleteFornecedor() {
+    $('#fornecedor').off('input').on('input', function () {
+        const termo = ($(this).val() || '').trim();
+        const $lista = $('#fornecedor-autocomplete');
+
+        if (termo.length < 2) {
+            $lista.hide().html('');
+            return;
+        }
+
+        $.ajax({
+            url: `${API_URL}/fornecedores`,
+            method: 'GET',
+            headers: {
+                Authorization: 'Bearer ' + (localStorage.getItem('token') || '')
+            },
+            success: function (fornecedores) {
+                const filtrados = (fornecedores || []).filter(f =>
+                    f &&
+                    f.nome &&
+                    String(f.nome).toLowerCase().includes(termo.toLowerCase())
+                );
+
+                if (filtrados.length === 0) {
+                    $lista.hide().html('');
+                    return;
+                }
+
+                let html = '';
+                filtrados.forEach(f => {
+                    html += `
+                        <button
+                            type="button"
+                            class="list-group-item list-group-item-action fornecedor-item"
+                            data-nome="${escapeHtml(f.nome)}"
+                        >
+                            ${escapeHtml(f.nome)}
+                        </button>
+                    `;
+                });
+
+                $lista.html(html).show();
+
+                $('.fornecedor-item').off('click').on('click', function () {
+                    $('#fornecedor').val($(this).text().trim());
+                    $lista.hide().html('');
+                });
+            },
+            error: function () {
+                $lista.hide().html('');
+            }
+        });
+    });
+
+    $('#fornecedor').off('blur').on('blur', function () {
+        setTimeout(() => {
+            $('#fornecedor-autocomplete').hide().html('');
+        }, 200);
+    });
+}
+
+
+// Inicializa cálculo automático do preço de venda
+function inicializarCalculoPreco(produto, isEdit) {
     function atualizarPrecoVenda() {
         const precoCompra = parseFloat($('#preco_compra').val()) || 0;
         const margem = parseFloat($('#lucro_percentual').val());
+
         if (!isNaN(margem) && margem < 100) {
             const precoVenda = precoCompra / (1 - (margem / 100));
+
             if (isFinite(precoVenda)) {
                 $('#preco_venda').val(precoVenda.toFixed(2));
             }
         }
     }
-    $('#preco_compra').on('input', atualizarPrecoVenda);
-    $('#lucro_percentual').on('input', atualizarPrecoVenda);
 
-    // Se for edição, ao abrir o modal já faz o cálculo para garantir consistência
-    if (produto) {
+    $('#preco_compra').off('input').on('input', atualizarPrecoVenda);
+    $('#lucro_percentual').off('input').on('input', atualizarPrecoVenda);
+
+    if (isEdit && produto) {
         setTimeout(atualizarPrecoVenda, 100);
     }
-
-    // Permite edição manual do preço de venda normalmente
-    $('#produtoModal').modal('show');
 }
 
-// Save produto
+
+// Salva produto
 function saveProduto() {
     const id = $('#produtoId').val();
+
     const data = {
-        codigo: $('#codigo').val(),
-        nome: $('#nome').val(),
-        categoria: $('#categoria').val(),
-        unidade: $('#unidade').val(),
-        preco_compra: parseFloat($('#preco_compra').val()),
-        preco_venda: parseFloat($('#preco_venda').val()),
-        lucro_percentual: $('#lucro_percentual').val() !== '' ? parseFloat($('#lucro_percentual').val()) : undefined,
-        estoque_atual: parseFloat($('#estoque_atual').val()),
-        estoque_minimo: parseFloat($('#estoque_minimo').val()),
-        fornecedor: $('#fornecedor').val()
+        codigo: ($('#codigo').val() || '').trim(),
+        nome: ($('#nome').val() || '').trim(),
+        categoria_id: $('#categoria_id').val() || null,
+        subcategoria_id: $('#subcategoria_id').val() || null,
+        unidade: ($('#unidade').val() || '').trim(),
+        preco_compra: parseFloat($('#preco_compra').val()) || 0,
+        preco_venda: parseFloat($('#preco_venda').val()) || 0,
+        lucro_percentual: $('#lucro_percentual').val() !== '' ? parseFloat($('#lucro_percentual').val()) : null,
+        estoque_atual: parseFloat($('#estoque_atual').val()) || 0,
+        estoque_minimo: parseFloat($('#estoque_minimo').val()) || 0,
+        fornecedor: ($('#fornecedor').val() || '').trim()
     };
-    
+
+    if (!data.nome) {
+        showNotification('Informe o nome do produto.', 'warning');
+        $('#nome').focus();
+        return;
+    }
+
+    if (data.preco_venda <= 0) {
+        showNotification('Informe um preço de venda válido.', 'warning');
+        $('#preco_venda').focus();
+        return;
+    }
+
     const url = id ? `${API_URL}/produtos/${id}` : `${API_URL}/produtos`;
     const method = id ? 'PUT' : 'POST';
-    
+
     $.ajax({
         url: url,
         method: method,
         contentType: 'application/json',
+        headers: {
+            Authorization: 'Bearer ' + (localStorage.getItem('token') || '')
+        },
         data: JSON.stringify(data),
-        success: function() {
+        success: function () {
             $('#produtoModal').modal('hide');
-            showNotification('Produto salvo com sucesso!');
+            showNotification('Produto salvo com sucesso!', 'success');
             loadProdutos();
         },
-        error: function(xhr) {
-            showNotification('Erro ao salvar produto: ' + xhr.responseJSON?.error || 'Erro desconhecido', 'danger');
+        error: function (xhr) {
+            const erro = xhr.responseJSON?.error || 'Erro desconhecido';
+            showNotification('Erro ao salvar produto: ' + erro, 'danger');
         }
     });
 }
+window.saveProduto = saveProduto;
+
 
 // Histórico de preços
 function showHistoricoPrecos(produtoId) {
     $.ajax({
         url: `${API_URL}/produtos/${produtoId}/historico-precos`,
         method: 'GET',
-        success: function(rows) {
+        success: function (rows) {
             const modalHtml = `
-                <div class="modal fade" id="historicoPrecosModal" tabindex="-1">
+                <div class="modal fade" id="historicoPrecosModal" tabindex="-1" aria-hidden="true">
                     <div class="modal-dialog modal-lg">
                         <div class="modal-content">
                             <div class="modal-header">
@@ -257,13 +502,16 @@ function showHistoricoPrecos(produtoId) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            ${rows.length ? rows.map(r => `
-                                                <tr>
-                                                    <td>${formatDateTime(r.created_at)}</td>
-                                                    <td>${formatCurrency(r.preco_compra_anterior || 0)} → ${formatCurrency(r.preco_compra_novo || 0)}</td>
-                                                    <td>${formatCurrency(r.preco_venda_anterior || 0)} → ${formatCurrency(r.preco_venda_novo || 0)}</td>
-                                                </tr>
-                                            `).join('') : '<tr><td colspan="3" class="text-center">Nenhuma alteração de preço registrada ainda.</td></tr>'}
+                                            ${(rows && rows.length)
+                                                ? rows.map(r => `
+                                                    <tr>
+                                                        <td>${formatDateTime(r.created_at)}</td>
+                                                        <td>${formatCurrency(r.preco_compra_anterior || 0)} → ${formatCurrency(r.preco_compra_novo || 0)}</td>
+                                                        <td>${formatCurrency(r.preco_venda_anterior || 0)} → ${formatCurrency(r.preco_venda_novo || 0)}</td>
+                                                    </tr>
+                                                `).join('')
+                                                : '<tr><td colspan="3" class="text-center">Nenhuma alteração de preço registrada ainda.</td></tr>'
+                                            }
                                         </tbody>
                                     </table>
                                 </div>
@@ -275,28 +523,116 @@ function showHistoricoPrecos(produtoId) {
                     </div>
                 </div>
             `;
+
             $('#modal-container').html(modalHtml);
             $('#historicoPrecosModal').modal('show');
         },
-        error: function() {
+        error: function () {
             showNotification('Erro ao carregar histórico de preços.', 'danger');
         }
     });
 }
+window.showHistoricoPrecos = showHistoricoPrecos;
 
-// Delete produto
+
+// Excluir produto
 function deleteProduto(id) {
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
-        $.ajax({
-            url: `${API_URL}/produtos/${id}`,
-            method: 'DELETE',
-            success: function() {
-                showNotification('Produto excluído com sucesso!');
-                loadProdutos();
-            },
-            error: function(xhr) {
-                showNotification('Erro ao excluir produto: ' + xhr.responseJSON?.error || 'Erro desconhecido', 'danger');
-            }
-        });
+    if (!confirm('Tem certeza que deseja excluir este produto?')) {
+        return;
     }
+
+    $.ajax({
+        url: `${API_URL}/produtos/${id}`,
+        method: 'DELETE',
+        headers: {
+            Authorization: 'Bearer ' + (localStorage.getItem('token') || '')
+        },
+        success: function () {
+            showNotification('Produto excluído com sucesso!', 'success');
+            loadProdutos();
+        },
+        error: function (xhr) {
+            const erro = xhr.responseJSON?.error || 'Erro desconhecido';
+            showNotification('Erro ao excluir produto: ' + erro, 'danger');
+        }
+    });
+}
+window.deleteProduto = deleteProduto;
+
+
+// Editar produto
+function editProduto(id) {
+    $.ajax({
+        url: `${API_URL}/produtos/${id}`,
+        method: 'GET',
+        headers: {
+            Authorization: 'Bearer ' + (localStorage.getItem('token') || '')
+        },
+        success: function (produto) {
+            showProdutoModal(produto);
+        },
+        error: function () {
+            showNotification('Erro ao carregar produto para edição.', 'danger');
+        }
+    });
+}
+window.editProduto = editProduto;
+
+
+// Visualizar produto
+function viewProduto(id) {
+    $.ajax({
+        url: `${API_URL}/produtos/${id}`,
+        method: 'GET',
+        headers: {
+            Authorization: 'Bearer ' + (localStorage.getItem('token') || '')
+        },
+        success: function (produto) {
+            const modalHtml = `
+                <div class="modal fade" id="viewProdutoModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Detalhes do Produto</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p><strong>Nome:</strong> ${escapeHtml(produto.nome || '-')}</p>
+                                <p><strong>Código:</strong> ${escapeHtml(produto.codigo || '-')}</p>
+                                <p><strong>Categoria:</strong> ${escapeHtml(produto.categoria || '-')}</p>
+                                <p><strong>Subcategoria:</strong> ${escapeHtml(produto.subcategoria || '-')}</p>
+                                <p><strong>Unidade:</strong> ${escapeHtml(produto.unidade || '-')}</p>
+                                <p><strong>Preço de Compra:</strong> ${formatCurrency(produto.preco_compra || 0)}</p>
+                                <p><strong>Preço de Venda:</strong> ${formatCurrency(produto.preco_venda || 0)}</p>
+                                <p><strong>Estoque Atual:</strong> ${Number(produto.estoque_atual || 0)}</p>
+                                <p><strong>Estoque Mínimo:</strong> ${Number(produto.estoque_minimo || 0)}</p>
+                                <p><strong>Fornecedor:</strong> ${escapeHtml(produto.fornecedor || '-')}</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            $('#modal-container').html(modalHtml);
+            $('#viewProdutoModal').modal('show');
+        },
+        error: function () {
+            showNotification('Erro ao carregar detalhes do produto.', 'danger');
+        }
+    });
+}
+window.viewProduto = viewProduto;
+
+
+// Escape HTML
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }

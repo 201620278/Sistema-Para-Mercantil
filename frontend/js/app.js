@@ -98,6 +98,15 @@ function loadPage(page) {
                 $('#page-content').html('<div class="alert alert-danger">Erro: Módulo de configurações não carregado!</div>');
             }
             break;
+        case 'categorias':
+            // Carregar página de categorias
+            $.get('categorias.html', function(html) {
+                $('#page-content').html(html);
+                if (typeof loadCategorias === 'function') {
+                    loadCategorias();
+                }
+            });
+            break;
         default:
             // ação padrão
             break;
