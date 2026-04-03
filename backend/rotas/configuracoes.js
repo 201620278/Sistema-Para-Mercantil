@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
+const backup = require('../backup');
 
 // Listar todas as configurações
 router.get('/', (req, res) => {
@@ -61,4 +62,31 @@ router.post('/', (req, res) => {
     });
 });
 
+// Backup: obter configurações
+router.get('/backup', (req, res) => {
+  const config = backup.loadConfig();
+  res.json(config);
+});
+
+// Backup: salvar configurações
+router.post('/backup', (req, res) => {
+  const config = req.body;
+  backup.saveConfig(config);
+  backup.scheduleBackup(config);
+  res.json({ success: true });
+});
+
+// Backup manual
+router.post('/backup/manual', async (req, res) => {
+  const config = backup.loadConfig();
+  if (!config.enabled) return res.status(400).json({ error: 'Backup não está habilitado.' });
+  const result = await backup.uploadBackupToDrive(config.google);
+  if (result.success) {
+    res.json({ success: true, file: result.file });
+  } else {
+    res.status(500).json({ error: result.error });
+  }
+});
+
+module.exports = router;
 module.exports = router;

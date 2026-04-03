@@ -14,6 +14,29 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 function inicializarBanco() {
+      // Tabela de fornecedores
+      db.run(`
+        CREATE TABLE IF NOT EXISTS fornecedores (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          nome VARCHAR(200) NOT NULL,
+          razao_social VARCHAR(200),
+          cpf_cnpj VARCHAR(20) UNIQUE,
+          telefone VARCHAR(20),
+          email VARCHAR(100),
+          contato VARCHAR(100),
+          cep VARCHAR(10),
+          rua VARCHAR(200),
+          numero VARCHAR(20),
+          bairro VARCHAR(100),
+          cidade VARCHAR(100),
+          uf VARCHAR(2),
+          observacoes TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `, (err) => {
+        if (err) console.error('Erro ao criar tabela fornecedores:', err);
+        else console.log('Tabela fornecedores criada/verificada');
+      });
   // Criar todas as tabelas em sequência
   db.serialize(() => {
     // Tabela de produtos

@@ -1,3 +1,159 @@
+
+/* =========================
+     FORNECEDORES
+========================= */
+
+.fornecedores-page {
+    padding: 20px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.form-group-full {
+    grid-column: 1 / -1;
+}
+
+.acoes-formulario {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    flex-wrap: wrap;
+}
+
+.fornecedores-topo-lista {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.fornecedores-topo-lista input {
+    max-width: 280px;
+    width: 100%;
+}
+
+.tabela-fornecedores {
+    width: 100%;
+}
+
+.acoes-tabela {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+/* =========================
+     FORNECEDORES (EXCLUSIVO)
+========================= */
+
+.pagina-fornecedores {
+    padding: 20px;
+}
+
+.grid-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.lista-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.lista-header input {
+    max-width: 280px;
+    width: 100%;
+}
+
+.tabela-fornecedores {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabela-fornecedores th,
+.tabela-fornecedores td {
+    border-bottom: 1px solid #eee;
+    padding: 12px 10px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.tabela-fornecedores th {
+    background: #f8f9fa;
+}
+
+.acoes-tabela {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+/* =========================
+     FORNECEDORES
+========================= */
+
+.pagina-fornecedores {
+    padding: 20px;
+}
+
+.grid-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 15px;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.lista-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.lista-header input {
+    max-width: 280px;
+    width: 100%;
+}
+
+.tabela-fornecedores {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.tabela-fornecedores th,
+.tabela-fornecedores td {
+    border-bottom: 1px solid #eee;
+    padding: 12px 10px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.tabela-fornecedores th {
+    background: #f8f9fa;
+}
+
+.acoes-tabela {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
 /* Modal de aviso de débito customizado */
 #modalDebitoAviso .modal-content {
     border-radius: 12px;

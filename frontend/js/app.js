@@ -29,10 +29,19 @@ $(document).ready(function() {
 
 // Load page content
 function loadPage(page) {
-    console.log('Carregando página:', page);
-    currentPage = page;
-    
-    switch(page) {
+    switch (page) {
+        case 'fornecedores':
+            if (typeof loadFornecedores === 'function') {
+                loadFornecedores();
+            } else {
+                console.error('loadFornecedores não está definida');
+                $('#page-content').html(`
+                    <div class="alert alert-danger">
+                        Erro: Módulo de fornecedores não carregado!
+                    </div>
+                `);
+            }
+            break;
         case 'pdv':
             if (typeof loadPDV === 'function') {
                 loadPDV();
@@ -90,7 +99,8 @@ function loadPage(page) {
             }
             break;
         default:
-            $('#page-content').html('<div class="alert alert-danger">Página não encontrada!</div>');
+            // ação padrão
+            break;
     }
 }
 

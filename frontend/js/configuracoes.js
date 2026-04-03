@@ -116,6 +116,8 @@ function renderConfiguracoes(configuracoes, usuarios) {
                 <button class="btn btn-warning ms-2" onclick="limparCache()">
                     <i class="fas fa-trash"></i> Limpar Cache
                 </button>
+                <button onclick="salvarBackupConfig()">Salvar Configuração de Backup</button>
+                <button onclick="backupManual()">Backup Manual Agora</button>
             </div>
         </div>
         
