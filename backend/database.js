@@ -14,6 +14,62 @@ const db = new sqlite3.Database(dbPath, (err) => {
 });
 
 function inicializarBanco() {
+                // ===== CATEGORIAS =====
+                db.run(`
+                  CREATE TABLE IF NOT EXISTS categorias (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome VARCHAR(100) NOT NULL UNIQUE,
+                    descricao TEXT
+                  )
+                `, (err) => {
+                  if (err) console.error('Erro ao criar tabela categorias:', err);
+                  else console.log('Tabela categorias criada/verificada');
+                });
+
+                // ===== SUBCATEGORIAS =====
+                db.run(`
+                  CREATE TABLE IF NOT EXISTS subcategorias (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    nome VARCHAR(100) NOT NULL,
+                    descricao TEXT,
+                    categoria_id INTEGER,
+                    FOREIGN KEY (categoria_id) REFERENCES categorias(id)
+                  )
+                `, (err) => {
+                  if (err) console.error('Erro ao criar tabela subcategorias:', err);
+                  else console.log('Tabela subcategorias criada/verificada');
+                });
+
+                // ===== GARANTIR COLUNAS NOVAS EM PRODUTOS =====
+                db.all(`PRAGMA table_info(produtos)`, [], (err, rows) => {
+                  if (err) {
+                    console.error('Erro ao verificar colunas da tabela produtos:', err);
+                    return;
+                  }
+
+                  const colunas = rows.map(r => r.name);
+
+                  if (!colunas.includes('categoria_id')) {
+                    db.run(`ALTER TABLE produtos ADD COLUMN categoria_id INTEGER`, (err) => {
+                      if (err) console.error('Erro ao adicionar coluna categoria_id:', err);
+                      else console.log('Coluna categoria_id adicionada em produtos');
+                    });
+                  }
+
+                  if (!colunas.includes('subcategoria_id')) {
+                    db.run(`ALTER TABLE produtos ADD COLUMN subcategoria_id INTEGER`, (err) => {
+                      if (err) console.error('Erro ao adicionar coluna subcategoria_id:', err);
+                      else console.log('Coluna subcategoria_id adicionada em produtos');
+                    });
+                  }
+
+                  if (!colunas.includes('lucro_percentual')) {
+                    db.run(`ALTER TABLE produtos ADD COLUMN lucro_percentual DECIMAL(10,2)`, (err) => {
+                      if (err) console.error('Erro ao adicionar coluna lucro_percentual:', err);
+                      else console.log('Coluna lucro_percentual adicionada em produtos');
+                    });
+                  }
+                });
               // Tabela de subcategorias
               db.run(`
                 CREATE TABLE IF NOT EXISTS subcategorias (

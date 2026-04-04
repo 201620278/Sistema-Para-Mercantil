@@ -272,6 +272,8 @@ function showProdutoModal(produto = null) {
     inicializarCalculoPreco(produto, isEdit);
 
     $('#produtoModal').modal('show');
+
+    // ...
 }
 
 

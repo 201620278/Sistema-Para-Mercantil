@@ -3,41 +3,54 @@ const express = require('express');
 const router = express.Router();
 const db = require('../database');
 
-// Listar todos os produtos ou buscar por nome/código de barras
+// LISTAR PRODUTOS
 router.get('/', (req, res) => {
-  const busca = req.query.busca;
-  if (busca) {
-    db.all(
-      'SELECT * FROM produtos WHERE nome LIKE ? OR codigo LIKE ? ORDER BY nome',
-      [`%${busca}%`, `%${busca}%`],
-      (err, rows) => {
-        if (err) {
-          res.status(500).json({ error: err.message });
-          return;
-        }
-        res.json(rows);
-      }
-    );
-  } else {
-    db.all('SELECT * FROM produtos ORDER BY nome', (err, rows) => {
-      if (err) {
-        res.status(500).json({ error: err.message });
-        return;
-      }
-      res.json(rows);
-    });
-  }
+  db.all(`
+    SELECT 
+      p.*,
+      c.nome AS categoria_nome,
+      s.nome AS subcategoria_nome
+    FROM produtos p
+    LEFT JOIN categorias c ON c.id = p.categoria_id
+    LEFT JOIN subcategorias s ON s.id = p.subcategoria_id
+    ORDER BY p.id DESC
+  `, [], (err, rows) => {
+    if (err) {
+      console.error('Erro ao listar produtos:', err.message);
+      return res.status(500).json({ error: err.message });
+    }
+
+    const produtos = rows.map(p => ({
+      ...p,
+      categoria: p.categoria_nome || p.categoria || '',
+      subcategoria: p.subcategoria_nome || ''
+    }));
+
+    res.json(produtos);
+  });
 });
 
-// Buscar produto por ID
+// Buscar produto por ID trazendo o nome da categoria
 router.get('/:id', (req, res) => {
-  const { id } = req.params;
-  db.get('SELECT * FROM produtos WHERE id = ?', [id], (err, row) => {
+  db.get(`
+    SELECT 
+      p.*,
+      c.nome AS categoria_nome
+    FROM produtos p
+    LEFT JOIN categorias c ON c.id = p.categoria_id
+    WHERE p.id = ?
+  `, [req.params.id], (err, row) => {
     if (err) {
-      res.status(500).json({ error: err.message });
-      return;
+      console.error(err.message);
+      return res.status(500).json({ error: err.message });
     }
-    res.json(row);
+    if (!row) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+    res.json({
+      ...row,
+      categoria: row.categoria_nome || ''
+    });
   });
 });
 
