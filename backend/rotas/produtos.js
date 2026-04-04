@@ -85,20 +85,41 @@ router.get('/:id/historico-precos', (req, res) => {
 // Criar produto
 router.post('/', (req, res) => {
   const {
-    codigo, nome, categoria, unidade, preco_compra,
+    codigo, nome, categoria_id, subcategoria_id, unidade, preco_compra,
     preco_venda, estoque_atual, estoque_minimo, fornecedor
   } = req.body;
 
   db.run(`
-    INSERT INTO produtos (codigo, nome, categoria, unidade, preco_compra, preco_venda, estoque_atual, estoque_minimo, fornecedor)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [codigo, nome, categoria, unidade, preco_compra, preco_venda, estoque_atual || 0, estoque_minimo || 0, fornecedor],
+    INSERT INTO produtos (codigo, nome, categoria_id, subcategoria_id, unidade, preco_compra, preco_venda, estoque_atual, estoque_minimo, fornecedor)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [codigo, nome, categoria_id, subcategoria_id, unidade, preco_compra, preco_venda, estoque_atual || 0, estoque_minimo || 0, fornecedor],
     function(err) {
       if (err) {
         res.status(500).json({ error: err.message });
         return;
       }
-      res.json({ id: this.lastID, message: 'Produto criado com sucesso' });
+      // Buscar o produto recém-criado já com nomes de categoria e subcategoria
+      db.get(`
+        SELECT 
+          p.*, 
+          c.nome AS categoria_nome, 
+          s.nome AS subcategoria_nome
+        FROM produtos p
+        LEFT JOIN categorias c ON c.id = p.categoria_id
+        LEFT JOIN subcategorias s ON s.id = p.subcategoria_id
+        WHERE p.id = ?
+      `, [this.lastID], (err2, row) => {
+        if (err2) {
+          res.status(500).json({ error: err2.message });
+          return;
+        }
+        res.json({
+          ...row,
+          categoria: row.categoria_nome || '',
+          subcategoria: row.subcategoria_nome || '',
+          message: 'Produto criado com sucesso'
+        });
+      });
     });
 });
 

@@ -1,3 +1,174 @@
+let categoriasSistema = [];
+let produtosSistema = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+    await inicializarProdutos();
+});
+
+async function inicializarProdutos() {
+    try {
+        await carregarCategorias();
+        await carregarProdutos();
+        configurarEventos();
+    } catch (erro) {
+        console.error('Erro ao inicializar módulo de produtos:', erro);
+    }
+}
+
+function configurarEventos() {
+    const form = document.getElementById('formProduto');
+    if (form) {
+        form.addEventListener('submit', salvarProduto);
+    }
+
+    const selectCategoria = document.getElementById('produtoCategoria');
+    if (selectCategoria) {
+        selectCategoria.addEventListener('change', preencherSubcategorias);
+    }
+}
+async function carregarCategorias() {
+    try {
+        const response = await fetch('/api/categorias');
+        const dados = await response.json();
+
+        categoriasSistema = (dados || []).map(cat => ({
+            ...cat,
+            id: String(cat.id),
+            nome: cat.nome || cat.categoria || '',
+            subcategorias: (cat.subcategorias || cat.subCategorias || []).map(sub => ({
+                ...sub,
+                id: String(sub.id),
+                nome: sub.nome || sub.subcategoria || ''
+            }))
+        }));
+
+        preencherSelectCategorias();
+    } catch (erro) {
+        console.error('Erro ao carregar categorias:', erro);
+        categoriasSistema = [];
+    }
+}
+
+function preencherSelectCategorias() {
+    const selectCategoria = document.getElementById('produtoCategoria');
+    if (!selectCategoria) return;
+
+    selectCategoria.innerHTML = `<option value="">Selecione</option>`;
+
+    categoriasSistema.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat.id;
+        option.textContent = cat.nome;
+        selectCategoria.appendChild(option);
+    });
+}
+
+function preencherSubcategorias(subcategoriaSelecionada = '') {
+    const selectCategoria = document.getElementById('produtoCategoria');
+    const selectSubcategoria = document.getElementById('produtoSubcategoria');
+
+    if (!selectCategoria || !selectSubcategoria) return;
+
+    const categoriaId = String(selectCategoria.value || '');
+    const categoria = categoriasSistema.find(c => String(c.id) === categoriaId);
+
+    selectSubcategoria.innerHTML = `<option value="">Selecione</option>`;
+
+    if (!categoria) return;
+
+    (categoria.subcategorias || []).forEach(sub => {
+        const option = document.createElement('option');
+        option.value = sub.id;
+        option.textContent = sub.nome;
+        if (String(sub.id) === String(subcategoriaSelecionada)) {
+            option.selected = true;
+        }
+        selectSubcategoria.appendChild(option);
+    });
+}
+
+function obterCategoriaNome(produto) {
+    const categoriaId = String(
+        produto.categoriaId ??
+        produto.categoria_id ??
+        produto.idCategoria ??
+        produto.id_categoria ??
+        ''
+    );
+    if (!categoriaId) return '-';
+    const categoria = categoriasSistema.find(c => String(c.id) === categoriaId);
+    return categoria?.nome || '-';
+}
+
+function obterSubcategoriaNome(produto) {
+    const categoriaId = String(
+        produto.categoriaId ??
+        produto.categoria_id ??
+        produto.idCategoria ??
+        produto.id_categoria ??
+        ''
+    );
+    const subcategoriaId = String(
+        produto.subcategoriaId ??
+        produto.subcategoria_id ??
+        produto.idSubcategoria ??
+        produto.id_subcategoria ??
+        ''
+    );
+    if (!categoriaId || !subcategoriaId) return '-';
+    const categoria = categoriasSistema.find(c => String(c.id) === categoriaId);
+    if (!categoria) return '-';
+    const subcategoria = (categoria.subcategorias || []).find(
+        sub => String(sub.id) === subcategoriaId
+    );
+    return subcategoria?.nome || '-';
+}
+async function carregarProdutos() {
+    try {
+        const response = await fetch('/api/produtos');
+        const dados = await response.json();
+        produtosSistema = dados || [];
+        renderizarTabelaProdutos(produtosSistema);
+    } catch (erro) {
+        console.error('Erro ao carregar produtos:', erro);
+        produtosSistema = [];
+    }
+}
+function renderizarTabelaProdutos(produtos) {
+    const tbody = document.getElementById('tabelaProdutosBody');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    produtos.forEach(produto => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${produto.nome || '-'}</td>
+            <td>${produto.codigo || '-'}</td>
+            <td>${obterCategoriaNome(produto)}</td>
+            <td>${obterSubcategoriaNome(produto)}</td>
+            <td>${Number(produto.preco || 0).toFixed(2)}</td>
+            <td>${produto.estoque ?? 0}</td>
+            <td>
+                <button onclick="editarProduto('${produto.id}')">Editar</button>
+                <button onclick="excluirProduto('${produto.id}')">Excluir</button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+// Função utilitária para normalizar produto com categoria e subcategoria
+function normalizarProduto(produto, categorias = window.categoriasSistema || []) {
+    const categoriaId = String(produto.categoria_id || produto.categoriaId || '');
+    const subcategoriaId = String(produto.subcategoria_id || produto.subcategoriaId || '');
+    const categoriaObj = categorias.find(c => String(c.id) === categoriaId);
+    const subcategoriaObj = categoriaObj && categoriaObj.subcategorias ? categoriaObj.subcategorias.find(s => String(s.id) === subcategoriaId) : null;
+    return {
+        ...produto,
+        categoria: produto.categoria || (categoriaObj ? categoriaObj.nome : ''),
+        subcategoria: produto.subcategoria || (subcategoriaObj ? subcategoriaObj.nome : '')
+    };
+}
 // Função global para minimizar modais Bootstrap
 window.minimizarModal = function(modalId) {
     const $modal = $('#' + modalId);
@@ -507,10 +678,19 @@ function saveProduto() {
             Authorization: 'Bearer ' + (localStorage.getItem('token') || '')
         },
         data: JSON.stringify(data),
-        success: function () {
+        success: function (produtoSalvo) {
             $('#produtoModal').modal('hide');
             showNotification('Produto salvo com sucesso!', 'success');
-            loadProdutos();
+            // Atualiza lista local se necessário
+            if (window.listaProdutos && Array.isArray(window.listaProdutos)) {
+                const produtoNormalizado = normalizarProduto(produtoSalvo, window.categoriasSistema || []);
+                window.listaProdutos.unshift(produtoNormalizado);
+                if (typeof renderProdutos === 'function') {
+                    renderProdutos(window.listaProdutos);
+                }
+            } else {
+                loadProdutos();
+            }
         },
         error: function (xhr) {
             const erro = xhr.responseJSON?.error || 'Erro desconhecido';
