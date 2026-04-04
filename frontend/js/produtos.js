@@ -1,4 +1,3 @@
-// ...implementação antiga removida/comentada...
 // Função utilitária para normalizar produto com categoria e subcategoria
 function normalizarProduto(produto, categorias = window.categoriasSistema || []) {
     const categoriaId = String(produto.categoria_id || produto.categoriaId || '');

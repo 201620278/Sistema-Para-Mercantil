@@ -42,20 +42,6 @@ router.get('/codigo/:codigo', (req, res) => {
   });
 });
 
-// Buscar produtos com estoque baixo
-router.get('/estoque/baixo', (req, res) => {
-  db.all(`
-    SELECT * FROM produtos 
-    WHERE estoque_atual <= estoque_minimo 
-    ORDER BY (estoque_atual / NULLIF(estoque_minimo, 0)) ASC
-  `, (err, rows) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    res.json(rows);
-  });
-});
 
 // Histórico de preços do produto
 router.get('/:id/historico-precos', (req, res) => {
@@ -105,13 +91,21 @@ router.get('/:id', (req, res) => {
 router.post('/', (req, res) => {
   const {
     codigo, nome, categoria_id, subcategoria_id, unidade, preco_compra,
-    preco_venda, estoque_atual, estoque_minimo, fornecedor
+    lucro_percentual, preco_venda, estoque_atual, estoque_minimo, fornecedor
   } = req.body;
 
   db.run(`
-    INSERT INTO produtos (codigo, nome, categoria_id, subcategoria_id, unidade, preco_compra, preco_venda, estoque_atual, estoque_minimo, fornecedor)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `, [codigo, nome, categoria_id, subcategoria_id, unidade, preco_compra, preco_venda, estoque_atual || 0, estoque_minimo || 0, fornecedor],
+    INSERT INTO produtos (
+      codigo, nome, categoria_id, subcategoria_id, unidade,
+      preco_compra, lucro_percentual, preco_venda,
+      estoque_atual, estoque_minimo, fornecedor
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `, [
+    codigo, nome, categoria_id, subcategoria_id, unidade,
+    preco_compra, lucro_percentual, preco_venda,
+    estoque_atual || 0, estoque_minimo || 0, fornecedor
+  ],
     function(err) {
       if (err) {
         res.status(500).json({ error: err.message });
