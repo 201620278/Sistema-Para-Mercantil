@@ -1,162 +1,4 @@
-let categoriasSistema = [];
-let produtosSistema = [];
-
-document.addEventListener('DOMContentLoaded', async () => {
-    await inicializarProdutos();
-});
-
-async function inicializarProdutos() {
-    try {
-        await carregarCategorias();
-        await carregarProdutos();
-        configurarEventos();
-    } catch (erro) {
-        console.error('Erro ao inicializar módulo de produtos:', erro);
-    }
-}
-
-function configurarEventos() {
-    const form = document.getElementById('formProduto');
-    if (form) {
-        form.addEventListener('submit', salvarProduto);
-    }
-
-    const selectCategoria = document.getElementById('produtoCategoria');
-    if (selectCategoria) {
-        selectCategoria.addEventListener('change', preencherSubcategorias);
-    }
-}
-async function carregarCategorias() {
-    try {
-        const response = await fetch('/api/categorias');
-        const dados = await response.json();
-
-        categoriasSistema = (dados || []).map(cat => ({
-            ...cat,
-            id: String(cat.id),
-            nome: cat.nome || cat.categoria || '',
-            subcategorias: (cat.subcategorias || cat.subCategorias || []).map(sub => ({
-                ...sub,
-                id: String(sub.id),
-                nome: sub.nome || sub.subcategoria || ''
-            }))
-        }));
-
-        preencherSelectCategorias();
-    } catch (erro) {
-        console.error('Erro ao carregar categorias:', erro);
-        categoriasSistema = [];
-    }
-}
-
-function preencherSelectCategorias() {
-    const selectCategoria = document.getElementById('produtoCategoria');
-    if (!selectCategoria) return;
-
-    selectCategoria.innerHTML = `<option value="">Selecione</option>`;
-
-    categoriasSistema.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat.id;
-        option.textContent = cat.nome;
-        selectCategoria.appendChild(option);
-    });
-}
-
-function preencherSubcategorias(subcategoriaSelecionada = '') {
-    const selectCategoria = document.getElementById('produtoCategoria');
-    const selectSubcategoria = document.getElementById('produtoSubcategoria');
-
-    if (!selectCategoria || !selectSubcategoria) return;
-
-    const categoriaId = String(selectCategoria.value || '');
-    const categoria = categoriasSistema.find(c => String(c.id) === categoriaId);
-
-    selectSubcategoria.innerHTML = `<option value="">Selecione</option>`;
-
-    if (!categoria) return;
-
-    (categoria.subcategorias || []).forEach(sub => {
-        const option = document.createElement('option');
-        option.value = sub.id;
-        option.textContent = sub.nome;
-        if (String(sub.id) === String(subcategoriaSelecionada)) {
-            option.selected = true;
-        }
-        selectSubcategoria.appendChild(option);
-    });
-}
-
-function obterCategoriaNome(produto) {
-    const categoriaId = String(
-        produto.categoriaId ??
-        produto.categoria_id ??
-        produto.idCategoria ??
-        produto.id_categoria ??
-        ''
-    );
-    if (!categoriaId) return '-';
-    const categoria = categoriasSistema.find(c => String(c.id) === categoriaId);
-    return categoria?.nome || '-';
-}
-
-function obterSubcategoriaNome(produto) {
-    const categoriaId = String(
-        produto.categoriaId ??
-        produto.categoria_id ??
-        produto.idCategoria ??
-        produto.id_categoria ??
-        ''
-    );
-    const subcategoriaId = String(
-        produto.subcategoriaId ??
-        produto.subcategoria_id ??
-        produto.idSubcategoria ??
-        produto.id_subcategoria ??
-        ''
-    );
-    if (!categoriaId || !subcategoriaId) return '-';
-    const categoria = categoriasSistema.find(c => String(c.id) === categoriaId);
-    if (!categoria) return '-';
-    const subcategoria = (categoria.subcategorias || []).find(
-        sub => String(sub.id) === subcategoriaId
-    );
-    return subcategoria?.nome || '-';
-}
-async function carregarProdutos() {
-    try {
-        const response = await fetch('/api/produtos');
-        const dados = await response.json();
-        produtosSistema = dados || [];
-        renderizarTabelaProdutos(produtosSistema);
-    } catch (erro) {
-        console.error('Erro ao carregar produtos:', erro);
-        produtosSistema = [];
-    }
-}
-function renderizarTabelaProdutos(produtos) {
-    const tbody = document.getElementById('tabelaProdutosBody');
-    if (!tbody) return;
-
-    tbody.innerHTML = '';
-
-    produtos.forEach(produto => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${produto.nome || '-'}</td>
-            <td>${produto.codigo || '-'}</td>
-            <td>${obterCategoriaNome(produto)}</td>
-            <td>${obterSubcategoriaNome(produto)}</td>
-            <td>${Number(produto.preco || 0).toFixed(2)}</td>
-            <td>${produto.estoque ?? 0}</td>
-            <td>
-                <button onclick="editarProduto('${produto.id}')">Editar</button>
-                <button onclick="excluirProduto('${produto.id}')">Excluir</button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
+// ...implementação antiga removida/comentada...
 // Função utilitária para normalizar produto com categoria e subcategoria
 function normalizarProduto(produto, categorias = window.categoriasSistema || []) {
     const categoriaId = String(produto.categoria_id || produto.categoriaId || '');
@@ -292,31 +134,40 @@ function renderProdutosRows(produtos) {
         return '<tr><td colspan="8" class="text-center">Nenhum produto cadastrado</td></tr>';
     }
 
-    return produtos.map(p => `
-        <tr>
-            <td>${escapeHtml(p.nome || '')}</td>
-            <td>${escapeHtml(p.codigo || '-')}</td>
-            <td>${escapeHtml(p.categoria || '-')}</td>
-            <td>${escapeHtml(p.unidade || '-')}</td>
-            <td>${formatCurrency(Number(p.preco_compra || 0))}</td>
-            <td>${formatCurrency(Number(p.preco_venda || 0))}</td>
-            <td>${Number(p.estoque_atual || 0)}</td>
-            <td>
-                <button class="btn btn-sm btn-info" onclick="viewProduto(${p.id})" title="Detalhes">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-sm btn-warning" onclick="editProduto(${p.id})" title="Editar">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-sm btn-danger" onclick="deleteProduto(${p.id})" title="Excluir">
-                    <i class="fas fa-trash"></i>
-                </button>
-                <button class="btn btn-sm btn-secondary" onclick="showHistoricoPrecos(${p.id})" title="Histórico de preços">
-                    <i class="fas fa-history"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
+    return produtos.map(p => {
+        const estoqueAtual = Number(p.estoque_atual || 0);
+        const estoqueMinimo = Number(p.estoque_minimo || 0);
+        const estoqueBaixo = estoqueAtual <= estoqueMinimo;
+
+        return `
+            <tr class="${estoqueBaixo ? 'table-danger' : ''}">
+                <td>${escapeHtml(p.nome || '')}</td>
+                <td>${escapeHtml(p.codigo || '-')}</td>
+                <td>${escapeHtml(p.categoria || '-')}</td>
+                <td>${escapeHtml(p.unidade || '-')}</td>
+                <td>${formatCurrency(Number(p.preco_compra || 0))}</td>
+                <td>${formatCurrency(Number(p.preco_venda || 0))}</td>
+                <td>
+                    ${estoqueAtual}
+                    ${estoqueBaixo ? '<span class="badge bg-danger ms-1">Baixo</span>' : ''}
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="viewProduto(${p.id})" title="Detalhes">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-sm btn-warning" onclick="editProduto(${p.id})" title="Editar">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteProduto(${p.id})" title="Excluir">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="btn btn-sm btn-secondary" onclick="showHistoricoPrecos(${p.id})" title="Histórico de preços">
+                        <i class="fas fa-history"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 
@@ -326,6 +177,9 @@ function showProdutoModal(produto = null) {
     const title = isEdit ? 'Editar Produto' : 'Novo Produto';
     const lucro = isEdit && produto.lucro_percentual !== undefined ? produto.lucro_percentual : '';
 
+    // Remove modais antigos para evitar conflitos de aria-hidden e IDs duplicados
+    $('#produtoModal').remove();
+    $('#viewProdutoModal').remove();
     const modalHtml = `
         <div class="modal fade" id="produtoModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -499,50 +353,51 @@ function inicializarCategoriasESubcategorias(produto, isEdit) {
     }
 
     categoriasAPI.listar().done(function (categorias) {
-        let catOptions = '<option value="">Selecione</option>';
-
-        (categorias || []).forEach(cat => {
-            catOptions += `<option value="${cat.id}">${escapeHtml(cat.nome || '')}</option>`;
-        });
-
-        $('#categoria_id').html(catOptions);
-
-        if (isEdit && produto && produto.categoria_id) {
-            $('#categoria_id').val(String(produto.categoria_id));
-        }
-
-        function carregarSubs(catId, selectedSubId = '') {
-            if (!catId) {
-                $('#subcategoria_id').html('<option value="">Selecione uma categoria</option>');
-                return;
+        // Carregar subcategorias para cada categoria
+        const promises = (categorias || []).map(cat =>
+            subcategoriasAPI.listarPorCategoria(cat.id).then(subcats => {
+                cat.subcategorias = subcats || [];
+                return cat;
+            })
+        );
+        Promise.all(promises).then(categoriasComSubs => {
+            window.categoriasSistema = categoriasComSubs;
+            let catOptions = '<option value="">Selecione</option>';
+            categoriasComSubs.forEach(cat => {
+                catOptions += `<option value="${cat.id}">${escapeHtml(cat.nome || '')}</option>`;
+            });
+            $('#categoria_id').html(catOptions);
+            if (isEdit && produto && produto.categoria_id) {
+                $('#categoria_id').val(String(produto.categoria_id));
             }
-
-            subcategoriasAPI.listarPorCategoria(catId).done(function (subcats) {
+            function carregarSubs(catId, selectedSubId) {
+                if (!catId) {
+                    $('#subcategoria_id').html('<option value="">Selecione uma categoria</option>');
+                    return;
+                }
+                const cat = categoriasComSubs.find(c => String(c.id) === String(catId));
                 let subOptions = '<option value="">Nenhuma</option>';
-
-                (subcats || []).forEach(sub => {
+                (cat && cat.subcategorias ? cat.subcategorias : []).forEach(sub => {
                     subOptions += `<option value="${sub.id}">${escapeHtml(sub.nome || '')}</option>`;
                 });
-
                 $('#subcategoria_id').html(subOptions);
-
-                if (selectedSubId) {
+                if (typeof selectedSubId !== 'undefined' && selectedSubId !== null) {
                     $('#subcategoria_id').val(String(selectedSubId));
                 }
-            }).fail(function () {
-                $('#subcategoria_id').html('<option value="">Erro ao carregar subcategorias</option>');
+            }
+            $('#categoria_id').off('change').on('change', function () {
+                carregarSubs($(this).val());
             });
-        }
-
-        $('#categoria_id').off('change').on('change', function () {
-            carregarSubs($(this).val());
+            if (isEdit && produto && typeof produto.categoria_id !== 'undefined' && produto.categoria_id !== null) {
+                let subId = '';
+                if (typeof produto.subcategoria_id !== 'undefined' && produto.subcategoria_id !== null && produto.subcategoria_id !== 'null') {
+                    subId = String(produto.subcategoria_id);
+                }
+                carregarSubs(produto.categoria_id, subId);
+            } else {
+                $('#subcategoria_id').html('<option value="">Selecione uma categoria</option>');
+            }
         });
-
-        if (isEdit && produto && produto.categoria_id) {
-            carregarSubs(produto.categoria_id, produto.subcategoria_id || '');
-        } else {
-            $('#subcategoria_id').html('<option value="">Selecione uma categoria</option>');
-        }
     }).fail(function () {
         $('#categoria_id').html('<option value="">Erro ao carregar categorias</option>');
         $('#subcategoria_id').html('<option value="">Erro ao carregar subcategorias</option>');
@@ -644,8 +499,8 @@ function saveProduto() {
     const data = {
         codigo: ($('#codigo').val() || '').trim(),
         nome: ($('#nome').val() || '').trim(),
-        categoria_id: $('#categoria_id').val() || null,
-        subcategoria_id: $('#subcategoria_id').val() || null,
+        categoria_id: $('#categoria_id').val() ? String($('#categoria_id').val()) : null,
+        subcategoria_id: $('#subcategoria_id').val() ? String($('#subcategoria_id').val()) : null,
         unidade: ($('#unidade').val() || '').trim(),
         preco_compra: parseFloat($('#preco_compra').val()) || 0,
         preco_venda: parseFloat($('#preco_venda').val()) || 0,
@@ -654,6 +509,7 @@ function saveProduto() {
         estoque_minimo: parseFloat($('#estoque_minimo').val()) || 0,
         fornecedor: ($('#fornecedor').val() || '').trim()
     };
+
 
     if (!data.nome) {
         showNotification('Informe o nome do produto.', 'warning');
@@ -664,6 +520,24 @@ function saveProduto() {
     if (data.preco_venda <= 0) {
         showNotification('Informe um preço de venda válido.', 'warning');
         $('#preco_venda').focus();
+        return;
+    }
+
+    if (data.preco_compra < 0) {
+        showNotification('Preço de compra inválido.', 'warning');
+        $('#preco_compra').focus();
+        return;
+    }
+
+    if (data.estoque_atual < 0) {
+        showNotification('Estoque atual inválido.', 'warning');
+        $('#estoque_atual').focus();
+        return;
+    }
+
+    if (data.estoque_minimo < 0) {
+        showNotification('Estoque mínimo inválido.', 'warning');
+        $('#estoque_minimo').focus();
         return;
     }
 

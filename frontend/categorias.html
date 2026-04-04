@@ -59,7 +59,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-success" onclick="criarCategoria()">Salvar</button>
+        <button type="button" class="btn btn-success" id="btn-salvar-categoria">Salvar</button>
       </div>
     </div>
   </div>
@@ -85,7 +85,7 @@
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-success" onclick="criarSubcategoria()">Salvar</button>
+        <button type="button" class="btn btn-success" id="btn-salvar-subcategoria">Salvar</button>
       </div>
     </div>
   </div>
@@ -141,19 +141,33 @@
     });
   }
 
-  function criarSubcategoria() {
+  function criarOuSalvarSubcategoria() {
+    const id = $('#subcategoria-id').val();
     const nome = $('#subcategoria-nome').val().trim();
     const categoria_id = $('#subcategoria-categoria-id').val();
     if (!nome || !categoria_id) {
       alert('Nome e categoria são obrigatórios!');
       return;
     }
-    subcategoriasAPI.criar({ nome, categoria_id }).done(() => {
-      $('#subcategoria-nome').val('');
-      loadSubcategorias();
-    }).fail(err => {
-      alert('Erro ao criar subcategoria: ' + (err.responseJSON?.erro || err.statusText));
-    });
+    if (id) {
+      subcategoriasAPI.atualizar(id, { nome, categoria_id }).done(() => {
+        $('#modal-subcategoria').modal('hide');
+        $('#subcategoria-nome').val('');
+        $('#subcategoria-id').val('');
+        loadSubcategorias();
+      }).fail(err => {
+        alert('Erro ao atualizar subcategoria: ' + (err.responseJSON?.erro || err.statusText));
+      });
+    } else {
+      subcategoriasAPI.criar({ nome, categoria_id }).done(() => {
+        $('#modal-subcategoria').modal('hide');
+        $('#subcategoria-nome').val('');
+        $('#subcategoria-id').val('');
+        loadSubcategorias();
+      }).fail(err => {
+        alert('Erro ao criar subcategoria: ' + (err.responseJSON?.erro || err.statusText));
+      });
+    }
   }
 
   function editarSubcategoria(id) {
@@ -162,8 +176,8 @@
       if (!sub) return;
       $('#subcategoria-nome').val(sub.nome);
       $('#subcategoria-categoria-id').val(sub.categoria_id);
-      // Para edição real, ideal abrir modal, mas aqui simplificado
-      excluirSubcategoria(id);
+      $('#subcategoria-id').val(sub.id);
+      $('#modal-subcategoria').modal('show');
     });
   }
 
@@ -177,6 +191,21 @@
   }
 
   $(document).ready(function() {
+    // Adiciona campo hidden para id da subcategoria se não existir
+    if ($('#subcategoria-id').length === 0) {
+      $('<input type="hidden" id="subcategoria-id">').prependTo($('#modal-subcategoria .modal-body'));
+    }
+    // Botão salvar categoria: decide se cria ou atualiza
+    $('#btn-salvar-categoria').off('click').on('click', function() {
+      const id = $('#categoria-id').val();
+      if (id) {
+        salvarCategoria();
+      } else {
+        criarCategoria();
+      }
+    });
+    // Botão salvar subcategoria: decide se cria ou atualiza
+    $('#btn-salvar-subcategoria').off('click').on('click', criarOuSalvarSubcategoria);
     loadCategoriasAndSubcategorias();
   });
 </script>

@@ -135,6 +135,7 @@ function inicializarBanco() {
         unidade VARCHAR(20),
         preco_compra DECIMAL(10,2),
         preco_venda DECIMAL(10,2) NOT NULL,
+        lucro_percentual DECIMAL(10,2),
         estoque_atual DECIMAL(10,2) DEFAULT 0,
         estoque_minimo DECIMAL(10,2) DEFAULT 0,
         fornecedor VARCHAR(200),

@@ -30,30 +30,6 @@ router.get('/', (req, res) => {
   });
 });
 
-// Buscar produto por ID trazendo o nome da categoria
-router.get('/:id', (req, res) => {
-  db.get(`
-    SELECT 
-      p.*,
-      c.nome AS categoria_nome
-    FROM produtos p
-    LEFT JOIN categorias c ON c.id = p.categoria_id
-    WHERE p.id = ?
-  `, [req.params.id], (err, row) => {
-    if (err) {
-      console.error(err.message);
-      return res.status(500).json({ error: err.message });
-    }
-    if (!row) {
-      return res.status(404).json({ error: 'Produto não encontrado' });
-    }
-    res.json({
-      ...row,
-      categoria: row.categoria_nome || ''
-    });
-  });
-});
-
 // Buscar produto por código
 router.get('/codigo/:codigo', (req, res) => {
   const { codigo } = req.params;
@@ -63,6 +39,21 @@ router.get('/codigo/:codigo', (req, res) => {
       return;
     }
     res.json(row);
+  });
+});
+
+// Buscar produtos com estoque baixo
+router.get('/estoque/baixo', (req, res) => {
+  db.all(`
+    SELECT * FROM produtos 
+    WHERE estoque_atual <= estoque_minimo 
+    ORDER BY (estoque_atual / NULLIF(estoque_minimo, 0)) ASC
+  `, (err, rows) => {
+    if (err) {
+      res.status(500).json({ error: err.message });
+      return;
+    }
+    res.json(rows);
   });
 });
 
@@ -79,6 +70,34 @@ router.get('/:id/historico-precos', (req, res) => {
       return;
     }
     res.json(rows);
+  });
+});
+
+// Buscar produto por ID trazendo o nome da categoria
+// Buscar produto por ID trazendo o nome da categoria e subcategoria
+router.get('/:id', (req, res) => {
+  db.get(`
+    SELECT 
+      p.*, 
+      c.nome AS categoria_nome,
+      s.nome AS subcategoria_nome
+    FROM produtos p
+    LEFT JOIN categorias c ON c.id = p.categoria_id
+    LEFT JOIN subcategorias s ON s.id = p.subcategoria_id
+    WHERE p.id = ?
+  `, [req.params.id], (err, row) => {
+    if (err) {
+      console.error(err.message);
+      return res.status(500).json({ error: err.message });
+    }
+    if (!row) {
+      return res.status(404).json({ error: 'Produto não encontrado' });
+    }
+    res.json({
+      ...row,
+      categoria: row.categoria_nome || '',
+      subcategoria: row.subcategoria_nome || ''
+    });
   });
 });
 
@@ -165,6 +184,28 @@ router.put('/:id', (req, res) => {
       const mudouCompra = Number(novoPc) !== Number(old.preco_compra);
       const mudouVenda = Number(novoPv) !== Number(old.preco_venda);
 
+      function responderComProdutoAtualizado() {
+        db.get(`
+          SELECT 
+            p.*,
+            c.nome AS categoria_nome,
+            s.nome AS subcategoria_nome
+          FROM produtos p
+          LEFT JOIN categorias c ON c.id = p.categoria_id
+          LEFT JOIN subcategorias s ON s.id = p.subcategoria_id
+          WHERE p.id = ?
+        `, [id], (err2, row) => {
+          if (err2) {
+            return res.status(500).json({ error: err2.message });
+          }
+          res.json({
+            ...row,
+            categoria: row.categoria_nome || '',
+            subcategoria: row.subcategoria_nome || ''
+          });
+        });
+      }
+
       if (mudouCompra || mudouVenda) {
         db.run(`
           INSERT INTO produtos_preco_historico (
@@ -174,10 +215,10 @@ router.put('/:id', (req, res) => {
           if (histErr) {
             console.error('Erro ao registrar histórico de preços:', histErr);
           }
-          res.json({ message: 'Produto atualizado com sucesso' });
+          responderComProdutoAtualizado();
         });
       } else {
-        res.json({ message: 'Produto atualizado com sucesso' });
+        responderComProdutoAtualizado();
       }
     });
   });

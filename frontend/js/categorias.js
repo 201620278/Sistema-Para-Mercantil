@@ -89,7 +89,7 @@ function editarCategoria(id) {
     $('#categoria-id').val(cat.id);
     $('#categoria-nome').val(cat.nome);
     $('#categoria-descricao').val(cat.descricao);
-    $('#categoria-modal').modal('show');
+    $('#modal-categoria').modal('show');
   });
 }
 
