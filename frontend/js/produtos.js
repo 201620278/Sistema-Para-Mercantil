@@ -1,3 +1,38 @@
+// Função global para minimizar modais Bootstrap
+window.minimizarModal = function(modalId) {
+    const $modal = $('#' + modalId);
+    if ($modal.length) {
+        $modal.modal('hide');
+        // Adiciona botão flutuante para restaurar
+        if ($('#btn-restaurar-' + modalId).length === 0) {
+            const $btn = $('<button id="btn-restaurar-' + modalId + '" class="btn btn-primary position-fixed" style="bottom: 24px; right: 24px; z-index: 2000; box-shadow: 0 2px 8px #0002;">Restaurar Produto</button>');
+            $btn.on('click', function() {
+                $modal.modal('show');
+                // Atualiza categorias e subcategorias ao restaurar
+                if (typeof inicializarCategoriasESubcategorias === 'function') {
+                    // Pega os dados já preenchidos
+                    const produto = {
+                        id: $('#produtoId').val(),
+                        codigo: $('#codigo').val(),
+                        nome: $('#nome').val(),
+                        categoria_id: $('#categoria_id').val(),
+                        subcategoria_id: $('#subcategoria_id').val(),
+                        unidade: $('#unidade').val(),
+                        preco_compra: $('#preco_compra').val(),
+                        lucro_percentual: $('#lucro_percentual').val(),
+                        preco_venda: $('#preco_venda').val(),
+                        estoque_atual: $('#estoque_atual').val(),
+                        estoque_minimo: $('#estoque_minimo').val(),
+                        fornecedor: $('#fornecedor').val()
+                    };
+                    inicializarCategoriasESubcategorias(produto, !!produto.id);
+                }
+                $(this).remove();
+            });
+            $('body').append($btn);
+        }
+    }
+};
 // =========================
 // MÓDULO DE PRODUTOS
 // =========================
@@ -124,10 +159,15 @@ function showProdutoModal(produto = null) {
         <div class="modal fade" id="produtoModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-scrollable">
                 <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">${title}</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
-                    </div>
+                    <div class="modal-header d-flex align-items-center justify-content-between">
+                        <h5 class="modal-title mb-0">${title}</h5>
+                        <div>
+                            <button type="button" class="btn btn-sm btn-light me-1" title="Minimizar" onclick="minimizarModal('produtoModal')">
+                                <i class="fas fa-window-minimize"></i>
+						</button>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+					</div>
+				</div>
 
                     <div class="modal-body">
                         <form id="produtoForm">
@@ -272,6 +312,8 @@ function showProdutoModal(produto = null) {
     inicializarCalculoPreco(produto, isEdit);
 
     $('#produtoModal').modal('show');
+    // Remove botão flutuante se existir ao restaurar
+    $('#btn-restaurar-produtoModal').remove();
 
     // ...
 }
